@@ -2,7 +2,7 @@
 
 > 출처: docs/PRD.md, docs/API_SPEC.md, docs/DATA_MODEL.md
 > 상태: 초안 (검토 전)
-> 컴포넌트 = 화면을 이루는 부품. 파일은 src/components/ 에 두고, 페이지는 app/page.tsx에서 TodoPage를 불러 쓴다.
+> 컴포넌트 = 화면을 이루는 부품. 파일은 src/components/ 에 두고, 페이지는 app/page.tsx에서 TodoPage를 불러 쓴다. 서버 API는 FastAPI(backend/)가 맡는다.
 
 ## 1. 컴포넌트 트리
 

@@ -12,21 +12,23 @@
 
 | 필드 | 타입 | 제약조건 | 설명 |
 |------|------|----------|------|
-| id | int | PK, 자동 증가 (AUTO_INCREMENT) | 자동 증가 번호 (삭제, 완료 전환 때 어떤 할 일인지 가리키는 값) |
+| id | integer | PK, 자동 증가 (GENERATED ALWAYS AS IDENTITY) | 자동 증가 번호 (삭제, 완료 전환 때 어떤 할 일인지 가리키는 값) |
 | title | varchar(100) | 필수, 1~100자 | 할 일 제목 (F-01) |
 | completed | boolean | 필수, 기본값 false | 완료 여부 (F-03) |
-| createdAt | timestamp | 필수, 기본값 now() | 만든 시각 (최신순 정렬 기준, F-02) |
+| createdAt | timestamptz | 필수, 기본값 now() | 만든 시각 (최신순 정렬 기준, F-02) |
 
 ### 규칙
-- **DB는 MySQL**이다. MySQL의 boolean은 내부적으로 0/1 숫자(tinyint)로 저장되지만, Drizzle이 코드에서는 true/false로 바꿔 준다.
+- **DB는 PostgreSQL**이다. PostgreSQL은 boolean(true/false)과 시간대가 있는 시각(timestamptz)을 그대로 저장하고, SQLAlchemy가 Python의 bool, datetime으로 바꿔 준다.
+- 실제 DB의 컬럼 이름은 Python 관례에 맞춰 `created_at`으로 쓸 수 있다. 다만 API 응답의 필드 이름은 이 문서대로 `createdAt`이다.
 - **정렬(F-02)**: createdAt이 큰 것부터(최신순). 같은 시각이면 id가 큰 것부터.
 - **삭제(F-04)**: 해당 행을 완전히 지운다. (삭제 표시만 해두는 방식은 쓰지 않는다.)
-- **제목 검사**: 서버가 앞뒤 공백을 지운 뒤 길이(1~100자)를 검사하고, 지운 값을 저장한다. 길이 규칙은 DB 제약과 Zod 검사 양쪽에서 지킨다. (docs/TRD.md 4장 참고)
+- **제목 검사**: 서버가 앞뒤 공백을 지운 뒤 길이(1~100자)를 검사하고, 지운 값을 저장한다. 길이 규칙은 DB 제약과 Pydantic 검사 양쪽에서 지킨다. (docs/TRD.md 4장 참고)
 - **createdAt은 유지한다.** 최신순 정렬의 기준이다.
 - **updatedAt(마지막 수정 시각)은 지금 두지 않는다.** 수정 기능이 PRD에 아직 없다. 수정을 정의하는 v0.4에서 추가한다.
 
-## 3. TypeScript 타입 예시
+## 3. 타입 예시
 
+### 화면용 TypeScript 타입
 저장된 할 일 한 개 (src/types/ 에 둔다).
 
 ```ts
@@ -49,8 +51,27 @@ export type UpdateTodoInput = {
 };
 ```
 
+### 서버용 Pydantic 모델 (backend/ 에 둔다)
+
+```python
+# 서버가 돌려주는 할 일 한 개
+class Todo(BaseModel):
+    id: int
+    title: str
+    completed: bool
+    createdAt: datetime  # JSON으로 나갈 때 ISO 문자열이 된다
+
+# 할 일을 새로 만들 때 받는 값 (F-01)
+class CreateTodoInput(BaseModel):
+    title: str  # 앞뒤 공백을 지운 뒤 1~100자
+
+# 완료 여부를 바꿀 때 받는 값 (F-03)
+class UpdateTodoInput(BaseModel):
+    completed: bool
+```
+
 - id, completed, createdAt은 서버/DB가 정하므로 만들 때는 보내지 않는다. (title만 보낸다.)
-- DB에서 읽은 createdAt은 Date지만, 화면으로 보낼 때 문자열(ISO 형식)로 바뀐다.
+- DB에서 읽은 createdAt은 datetime이지만, 화면으로 보낼 때 문자열(ISO 형식)로 바뀐다.
 
 ## 4. 예시 데이터
 
